@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
 setup(
         name="few_shot_face_classification",
         version="0.0.0",
-        description="Library to cluster and classify faces.",
+        description="Library to recognise and classify faces.",
         long_description=README,
         long_description_content_type="text/markdown",
         url="https://github.com/RubenPants/FewShotFaceClassification",

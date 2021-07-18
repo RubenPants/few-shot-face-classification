@@ -1,6 +1,6 @@
 # Few-Shot Face Classification
 
-Library to cluster and classify faces.
+Library to recognise and classify faces.
 
 ## Installation
 
