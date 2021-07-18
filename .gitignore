@@ -79,7 +79,6 @@ environment.yml
 .ipynb_checkpoints/
 experiments/
 notebooks/
-*.ipynb
 
 # Portray
 site/
