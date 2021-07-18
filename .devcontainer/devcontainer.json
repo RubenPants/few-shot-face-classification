@@ -1,0 +1,23 @@
+{
+    "name": "few_shot_face_classification",
+    "image": "continuumio/miniconda3:latest",
+    "mounts": [
+        "source=/run/host-services/ssh-auth.sock,target=/run/host-services/ssh-auth.sock,type=bind,consistency=cached"
+    ],
+    "containerEnv": {
+        "SSH_AUTH_SOCK": "/run/host-services/ssh-auth.sock"
+    },
+    "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "eamodio.gitlens"
+    ],
+    "settings": {
+        "terminal.integrated.shell.linux": "/usr/bin/fish",
+        "python.pythonPath": "/opt/conda/envs/few-shot-face-classification-env/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "python.terminal.activateEnvInCurrentTerminal": false
+    },
+    "postCreateCommand": "./tasks/init.sh devcontainer"
+}
