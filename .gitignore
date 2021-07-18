@@ -84,7 +84,7 @@ notebooks/
 # Portray
 site/
 
-# Data
-!demo/raw/
-!demo/labeled/
+# Data (include demo images)
+!demo/raw/*.jpeg
+!demo/labeled/*.png
 demo/results/
