@@ -85,6 +85,6 @@ notebooks/
 site/
 
 # Data
-!demo/raw
-!demo/labeled
-demo/results
+!demo/raw/
+!demo/labeled/
+demo/results/
