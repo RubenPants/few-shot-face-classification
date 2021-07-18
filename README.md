@@ -7,87 +7,121 @@ Library to recognise and classify faces.
 To install this package in your environment, run:
 
 ```bash
-pip install git+ssh://git@gitlab.com/radix-ai/packages/few-shot-face-classification.git@v0.0.0
+pip install git+https://github.com/RubenPants/few-shot-face-classification.git
 ```
 
-## Contributing
 
-### Development environment setup
 
-<details>
-<summary>Once per machine</summary>
+## Usage
 
-1. [Generate an SSH key](https://docs.gitlab.com/ee/ssh/README.html#generating-a-new-ssh-key-pair) for GitLab, [add the SSH key to GitLab](https://docs.gitlab.com/ee/ssh/README.html#adding-an-ssh-key-to-your-gitlab-account), and [add the SSH key to your authentication agent](https://docs.gitlab.com/ee/ssh/README.html#working-with-non-default-ssh-key-pair-paths).
-2. Install [Docker](https://www.docker.com/get-started).
-3. Install [VS Code](https://code.visualstudio.com/).
-4. Install [VS Code's Remote-Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
-5. Install [Fira Code](https://github.com/tonsky/FiraCode/wiki/VS-Code-Instructions).
+This library aims to solve the following problem: 
+> I have a folder full of images and would like to extract only those in which certain people of interest occur
 
-</details>
+This is done by using face extraction together with face recognition, in order to derive which faces look similar enough to deem a high plausibility of being of interest to the user.
 
-<details open>
-<summary>Once per repository</summary>
+More concrete, the main goal of this library is to prune out most images that don't include people of interest, while ensuring that almost all images of interest are successfully extracted. 
+In other words, we want to make sure all potential interesting images are indeed extracted, at the cost of some extra / irrelevant images that are extracted. This helps to narrow down the search drastically (assuming a lot of different people occur in the images) when searching for certain people.
 
-You can set up your development environment as a self-contained [development container](https://code.visualstudio.com/docs/remote/containers) with a single step. In VS Code, press <kbd>⌘</kbd> + <kbd>⇧</kbd> + <kbd>P</kbd>, select _Remote-Containers: Clone Repository in Container Volume..._ and enter:
 
+### 0. Data preparation
+
+The package operates on three different folders that contain images:
+- A *raw data* folder, which carries a raw dump of the images to analyse/classify
+- A *labeled* folder, which carries all labeled information
+- A *write* folder, which will carry the results of the algorithm
+
+For the time being, only images in the `.png`, `.jpg`, and `.jpeg` format are supported. All files present in the folders that have another format will be ignored.
+
+#### 0.1. Raw data folder
+
+This data folder, usually named by `raw_f` in the code, consists of images that are to be classified. 
+This can be a raw dump, as its name suggests.
+In these images, several faces (or even zero) can be present.
+
+Note that the labeled folder cannot be the same folder as the raw data folder.
+
+#### 0.2. Labeled folder
+
+This data folder, usually named by `labeled_f` in the code, consists of pictures in which only a single face is present.
+This face can either be of a *person of interest* or of a *person **not** of interest*.
+The names of these image-files denote to which class the image belongs:
+- An image consisting of a person of interest has the name `<name>_<some-text>.<format>` where `<name>` denotes the class-name, `<some-text>` denotes any text of your choice (e.g. a number) and `<format>` denotes one of the supported image formats, as mentioned above. For example, if I want to add an image of *Sheldon*, I crop a picture of his face and name it `sheldon_1.png`.
+- An image consisting of a person not or interest has a fixed class-name `none`. These images can be used to prevent the algorithm from mis-classifying similar faces. Say for example, someone looks similar to a person of interest, which causes a lot of *false positives*, then an image of this person's face with a name as `none_1.png` would prevent the algorithm from misclassifying.
+
+Note that the labeled folder cannot be the same folder as the raw data folder.
+
+#### 0.3. Write folder
+
+This data folder, usually named by `write_f` in the code, carries the results of the algorithm, which are written as subfolders within this folder.
+All images that match a person of interest *person* are written to the folder `write_f/person/`.
+This folder can be the same as the `raw_f` or `labeled_f` folders.
+
+### 1. Detect and export
+
+This core function of this package, `detect_and_export(raw_f, labeled_f, write_f)`, is used to categorise all the images found under `raw_f` to each person of interest. Note, this means that some images can be exported to several persons of interest at the same time, leading to several duplicate images across the category subfolders (under `write_f`).
+
+The algorithm will memorise all the faces it finds in the `labeled_f` folder and assign these *face representations* (or more generally called *embeddings*) to each of the mentioned categories (persons of interest). Using these captured face representations, it will then go over all images found in the `raw_f` folder to check for each image if a matching face is found. If the latter is the case, then this image will be exported to the correct subfolder, stored under `write_f`.
+
+**Note: If one or more people of interest are ignored during the export, this may be due to some bad representations in the `labeled_f` folder. To ensure everybody is extracted successfully, it's a good idea to add several representations of a single person in the `labeled_f` folder.**
+
+```python
+from pathlib import Path
+from few_shot_face_classification import detect_and_export
+
+detect_and_export(
+    raw_f=Path.cwd() / 'path-to-raw-folder',
+    labeled_f=Path.cwd() / 'path-to-labeled-folder',
+    write_f=Path.cwd() / 'path-to-write-folder',
+)
 ```
-git@gitlab.com:radix-ai/packages/few-shot-face-classification.git
+
+
+### 2. Recognise
+
+Another function of the package, `recognise(path, labeled_f)`, is used to recognise all *persons of interest* present in a single image. Similar to the previous function, the algorithm will memorise all the faces it has seen in the `labeled_f` folder. Using these face representations, it then goes over each face that is detected on the provided image (note: image-path is provided, which then refers to the image itself) to see if which persons of interest are indeed present. The output of this function is a set denoting all persons of interest present.
+
+**Note: In the example below, Amy and Bernadette are not of interest.**
+
+```python
+from pathlib import Path
+from src.few_shot_face_classification import recognise
+
+set_of_classes = recognise(
+    path=Path.cwd() / 'path-to-image.png',
+    labeled_f=Path.cwd() / 'path-to-labeled-folder',
+)
 ```
 
-Alternatively, if you prefer to install your environment locally, run `./tasks/init.sh` from VS Code's Terminal.
-</details>
 
-### Common tasks
+### 3. Reducing false positives
 
-<details>
-<summary>Activating the Python environment</summary>
+Sometimes, several images are included of people **not** of interest. It is possible to remove these false positives from the export by adding faces to the labeled dataset which the algorithm has to ignore. If you have several images of people (can be several people in one single image) that should not get recognised, you can add them as qualified "noise" to the labeled folder (`labeled_f`) to reduce the number of false positives made by the algorithm.
 
-1. Open any Python file in the project to load VS Code's Python extension.
-2. Open an integrated Terminal with <kbd>⌃</kbd> + <kbd>~</kbd> and you should see that the conda environment `few-shot-face-classification-env` is active.
-3. Now you're ready to run any of tasks listed by `invoke --list`.
+The algorithm will extract the faces present in the provided image, and assign them all to the `None` class. Newly observed faces (during inference) that match with any face from this none-class are ignored automatically. In other words, the algorithm keeps operating as it did before. However, if the *best face-match* happens to be with a face from this none-class, the algorithm identifies this match as *not of interest* and ignores it. However, if another face in the image still matches one of the people of interest, this match still proceeds.
 
-</details>
+**Note: running the same image twice will cause duplicates. This shouldn't affect the algorithm too much, however it can slow down inference time when done too much.**
 
-<details>
-<summary>Running and debugging tests</summary>
+```python
+from pathlib import Path
+from few_shot_face_classification import add_none
 
-1. Activate the Python environment.
-2. If you don't see _⚡ Run tests_ in the blue bar, run <kbd>⌘</kbd> + <kbd>⇧</kbd> + <kbd>P</kbd> > _Python: Discover Tests_. Optionally debug the output in _View_ > _Output_ > _Python Test Log_ in case this step fails.
-3. Go to any test function in `src/tests/pytest`.
-4. Optional: put a breakpoint 🔴 next to the line number where you want to stop.
-5. Click on _Run Test_ or _Debug Test_ above the test you want to debug.
+add_none(
+    path=Path.cwd() / 'path-to-image.png',
+    labeled_f=Path.cwd() / 'path-to-labeled-folder',
+)
+```
 
-</details>
 
-<details>
-<summary>Updating the Cookiecutter scaffolding</summary>
+## Future improvements
 
-1. Activate the Python environment.
-2. Run `cruft check` to check for updates.
-3. Run `cruft update` to update to the latest scaffolding.
-4. Address failed merges in any `.rej` files.
+### Unsupervised clustering
 
-</details>
+Perform an unsupervised clustering over all faces recognised in the raw data folder. 
+This would distribute (or copy) the images in the raw data folder to various folders representing each person occurring in the data.
+Through density based clustering algorithms (e.g. `HDBSCAN`), it is possible to remove people that don't occur too often in the data, only keeping those that are regularly in the frame (and are likely of interest to us).
 
-<details>
-<summary>Contributing code</summary>
 
-You are responsible for the full lifecycle to get your code integerated into `master`:
+### Labeling framework
 
-1. Create a new branch from `master`.<sup>1</sup>
-2. Push your branch and create an MR with prefix `WIP:`.<sup>2,3</sup>
-3. Rebase on `master` with `git pull --rebase origin master` before requesting a review.
-4. Request a review on Slack. [Mention someone](https://slack.com/intl/en-be/help/articles/205240127-Use-mentions-in-Slack#mention-someone) if no one takes action.
-5. Address the comments and ask the reviewer to validate that they are resolved. Repeat until there are no unresolved comments.
-6. Rebase on `master` with `git pull --rebase origin master`.
-7. Bump the version with `invoke bump [patch|minor|major]`.<sup>4</sup>
-8. Merge the MR and ensure that your branch is deleted.
-
-Notes:
-
-1. Prefix your branch name with a [Jira issue key](https://support.atlassian.com/jira-software-cloud/docs/what-is-an-issue/#Workingwithissues-Projectandissuekeys), or your initials if there is no related Jira issue.
-2. The `WIP:` prefix indicates that the MR is still a Work In Progress.
-3. A good commit message completes the sentence "[If applied, this commit will ...](https://chris.beams.io/posts/git-commit/)".
-4. Use [Semantic Versioning](https://semver.org/) to decide whether you bump the patch, minor, or major version.
-
-</details>
+An improvement in terms of *user-friendliness* would be to create a tool to label faces more efficiently.
+This tool could be self-learning, which implies that it only asks to label those samples for which the algorithm is most uncertain about.
