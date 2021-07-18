@@ -49,6 +49,7 @@ TEMP*
 # No images and pdf
 *.gif
 *.jpg
+*.jpeg
 *.svg
 *.png
 *.pdf
@@ -82,3 +83,8 @@ notebooks/
 
 # Portray
 site/
+
+# Data
+!demo/raw
+!demo/labeled
+demo/results
