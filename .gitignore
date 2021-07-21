@@ -87,4 +87,5 @@ site/
 # Data (include demo images)
 !demo/raw/*.jpeg
 !demo/labeled/*.png
+!img/*.png
 demo/results/

@@ -10,6 +10,8 @@ To install this package in your environment, run:
 pip install git+https://github.com/RubenPants/few-shot-face-classification.git
 ```
 
+![Group detection](img/group_detect.png)
+
 
 
 ## Usage
@@ -56,6 +58,7 @@ This data folder, usually named by `write_f` in the code, carries the results of
 All images that match a person of interest *person* are written to the folder `write_f/person/`.
 This folder can be the same as the `raw_f` or `labeled_f` folders.
 
+
 ### 1. Detect and export
 
 This core function of this package, `detect_and_export(raw_f, labeled_f, write_f)`, is used to categorise all the images found under `raw_f` to each person of interest. Note, this means that some images can be exported to several persons of interest at the same time, leading to several duplicate images across the category subfolders (under `write_f`).
@@ -75,6 +78,9 @@ detect_and_export(
 )
 ```
 
+For example, you can use it to export all pictures in which Sheldon is present:
+![Sheldon - Detect and export](img/detect_and_export.png)
+
 
 ### 2. Recognise
 
@@ -91,6 +97,9 @@ set_of_classes = recognise(
     labeled_f=Path.cwd() / 'path-to-labeled-folder',
 )
 ```
+
+For example, you can use it to recognise Howard, Sheldon, and Leonard in the image below:
+![Recognise](img/recognise.png)
 
 
 ### 3. Reducing false positives
@@ -110,6 +119,17 @@ add_none(
     labeled_f=Path.cwd() / 'path-to-labeled-folder',
 )
 ```
+
+For example, you can use it to specify which faces to ignore:
+![False positives](img/false_positive.png)
+
+
+
+## Jupyter Notebook
+
+For more information on the package and its functions, please refer to the guiding Jupyter Notebook. 
+This notebook can be found under the `demo/` repository, together with all the supporting data.
+
 
 
 ## Future improvements
