@@ -1,12 +1,15 @@
 """Complete A to Z functions on the data."""
 from glob import glob
+from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from random import getrandbits
 from shutil import move
-from typing import Set
+from typing import Any, List, Set
+
+from tqdm import tqdm
 
 from few_shot_face_classification.data import get_im_paths, load_single
-from few_shot_face_classification.embed import embed, embed_folder, get_networks, validate_face
+from few_shot_face_classification.embed import embed, embed_batch, embed_folder, get_networks, validate_face
 from few_shot_face_classification.exceptions import InvalidImageException
 from few_shot_face_classification.similarity import export, get_classes
 from few_shot_face_classification.utils import Conflict
@@ -70,6 +73,7 @@ def detect_and_export(
         raw_f: Path,
         labeled_f: Path,
         write_f: Path,
+        batch_size: int = 32,
         thr: float = 1.,
         conflict: Conflict = Conflict.CRASH,
 ) -> None:
@@ -79,6 +83,7 @@ def detect_and_export(
     :param raw_f: Folder with raw images to export / classify
     :param labeled_f: Folder with labeled images (faces)
     :param write_f: Folder to which results are written
+    :param batch_size: Batch size used during the export
     :param thr: Distance threshold
     :param conflict: How to handle conflict in the data (warn, remove, or crash execution)
     """
@@ -87,7 +92,35 @@ def detect_and_export(
     
     # Embed the data
     labeled_paths, labeled_embs = embed_folder(labeled_f)
-    paths, embs = embed_folder(raw_f)
+    
+    # Embed and export by batch, load in images to export first
+    paths = get_im_paths(raw_f)
+    
+    # Split the paths into batches
+    chunks: List[Any] = []
+    for i in range(0, len(paths), batch_size):
+        chunks.append((
+            paths[i:i + batch_size],
+            labeled_paths,
+            labeled_embs,
+            write_f,
+            thr
+        ))
+    
+    # Embed and export each chunk
+    with Pool(cpu_count() - 2) as p:
+        list(tqdm(p.imap(_embed_and_export, chunks), total=len(chunks), desc="Exporting"))
+
+
+def _embed_and_export(
+        args: List[Any],
+) -> None:
+    """Embed the given paths and export the results."""
+    # Unfold the arguments
+    paths, labeled_paths, labeled_embs, write_f, thr = args
+    
+    # Create the embeddings
+    paths, embs = embed_batch(paths)
     
     # Export the results
     export(

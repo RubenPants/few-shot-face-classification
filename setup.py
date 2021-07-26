@@ -18,12 +18,9 @@ INSTALL_REQUIRES = [
     'numpy',
 ]
 
-# TODO: Use streamlit?
-# 'streamlit~=0.84.1',
-
 setup(
         name="few_shot_face_classification",
-        version="0.0.0",
+        version="0.0.1",
         description="Library to recognise and classify faces.",
         long_description=README,
         long_description_content_type="text/markdown",
